@@ -1,26 +1,61 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* TODO: Light mode
+   - Add a light theme variant (toggle in header)
+   - Use CSS variables + class-based theme switching
+   - Add prefers-color-scheme media query for auto-detection
+*/
+
+/* TODO: Custom fonts
+   - Consider JetBrains Mono for score displays (more character)
+   - Add font-display: swap for better loading performance
+*/
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: #0a0a0f;
+  --color-foreground: #f0f0f5;
+  --color-surface: #1a1a2e;
+  --color-surface-light: #22223a;
+  --color-border: #2a2a3e;
+  --color-border-light: #3a3a50;
+  --color-muted: #8888a0;
+  --color-accent: #4f8fff;
+  --color-accent-hover: #6ba0ff;
+  --color-accent-glow: rgba(79, 143, 255, 0.15);
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  --color-violet: #7c5cff;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-light);
+}
+
+/* Selection */
+::selection {
+  background: var(--color-accent);
+  color: white;
 }
