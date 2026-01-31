@@ -30,9 +30,10 @@ export function TestCard({ test, bestScore, recentScores, index }: TestCardProps
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.4, ease: "easeOut" }}
+      className="h-full"
     >
-      <Link href={test.route} className="group block">
-        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-5 transition-colors duration-150 hover:bg-white/[0.04]">
+      <Link href={test.route} className="group block h-full">
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-5 transition-colors duration-150 hover:bg-white/[0.04] h-full">
           <div className="flex items-start gap-4">
             <Icon className={`h-9 w-9 shrink-0 ${categoryColor}`} weight="light" />
             <div className="min-w-0 flex-1">
