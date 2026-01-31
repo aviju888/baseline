@@ -1,11 +1,5 @@
 "use client";
 
-// TODO: Upgrade to 3D
-// - Install @react-three/fiber, @react-three/drei, three
-// - Replace 2D canvas blocks with 3D Shepard-Metzler shapes
-// - Add interactive rotation controls (drag to rotate for exploration mode)
-// - Add adjustable rotation angles for difficulty scaling
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { TestShell } from "@/components/test/TestShell";
 import { testMap } from "@/lib/tests/registry";
@@ -13,80 +7,174 @@ import { mean } from "@/lib/scoring/statistics";
 import { motion } from "framer-motion";
 
 const TOTAL_ROUNDS = 15;
-const CANVAS_SIZE = 200;
+const CANVAS_SIZE = 300;
 
-interface Block {
-  dx: number;
-  dy: number;
+interface Block3D {
+  x: number;
+  y: number;
+  z: number;
 }
 
-// Generate an L/T/Z-shaped piece from connected blocks
-function generateShape(): Block[] {
-  const shape: Block[] = [{ dx: 0, dy: 0 }];
-  const dirs = [
-    { dx: 1, dy: 0 },
-    { dx: -1, dy: 0 },
-    { dx: 0, dy: 1 },
-    { dx: 0, dy: -1 },
+// Generate 3D L/T shaped pieces - like classic Tetris blocks but in 3D
+function generateShape3D(): Block3D[] {
+  const templates: Block3D[][] = [
+    // L-shape
+    [{ x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 2, y: 0, z: 0 }, { x: 2, y: 1, z: 0 }],
+    // T-shape
+    [{ x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 2, y: 0, z: 0 }, { x: 1, y: 1, z: 0 }],
+    // Z-shape
+    [{ x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 1, y: 1, z: 0 }, { x: 2, y: 1, z: 0 }],
+    // 3D L going up
+    [{ x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 1, y: 0, z: 1 }, { x: 1, y: 0, z: 2 }],
+    // Tower L
+    [{ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 1 }, { x: 0, y: 0, z: 2 }, { x: 1, y: 0, z: 0 }],
+    // Corner piece
+    [{ x: 0, y: 0, z: 0 }, { x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: 0, z: 1 }],
   ];
 
-  for (let i = 0; i < 3 + Math.floor(Math.random() * 2); i++) {
-    const last = shape[shape.length - 1];
-    const dir = dirs[Math.floor(Math.random() * dirs.length)];
-    const next = { dx: last.dx + dir.dx, dy: last.dy + dir.dy };
-    if (!shape.some((b) => b.dx === next.dx && b.dy === next.dy)) {
-      shape.push(next);
-    }
-  }
-  return shape;
+  return templates[Math.floor(Math.random() * templates.length)];
 }
 
-function rotateShape(shape: Block[], angle: number): Block[] {
+// Rotate around Y axis (horizontal rotation)
+function rotateY(shape: Block3D[], angle: number): Block3D[] {
   const rad = (angle * Math.PI) / 180;
-  const cos = Math.cos(rad);
-  const sin = Math.sin(rad);
+  const cos = Math.round(Math.cos(rad));
+  const sin = Math.round(Math.sin(rad));
   return shape.map((b) => ({
-    dx: Math.round(b.dx * cos - b.dy * sin),
-    dy: Math.round(b.dx * sin + b.dy * cos),
+    x: b.x * cos + b.z * sin,
+    y: b.y,
+    z: -b.x * sin + b.z * cos,
   }));
 }
 
-function mirrorShape(shape: Block[]): Block[] {
-  return shape.map((b) => ({ dx: -b.dx, dy: b.dy }));
+// Rotate around X axis (tilt)
+function rotateX(shape: Block3D[], angle: number): Block3D[] {
+  const rad = (angle * Math.PI) / 180;
+  const cos = Math.round(Math.cos(rad));
+  const sin = Math.round(Math.sin(rad));
+  return shape.map((b) => ({
+    x: b.x,
+    y: b.y * cos - b.z * sin,
+    z: b.y * sin + b.z * cos,
+  }));
 }
 
-function drawShape(ctx: CanvasRenderingContext2D, shape: Block[], cx: number, cy: number, color: string) {
-  const blockSize = 28;
-  const gap = 2;
+// Mirror on X axis
+function mirrorShape3D(shape: Block3D[]): Block3D[] {
+  return shape.map((b) => ({ x: -b.x, y: b.y, z: b.z }));
+}
 
-  shape.forEach((b) => {
-    const x = cx + b.dx * (blockSize + gap) - blockSize / 2;
-    const y = cy + b.dy * (blockSize + gap) - blockSize / 2;
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, blockSize, blockSize);
-    ctx.strokeStyle = "#0a0a0f";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, blockSize, blockSize);
+// Convert 3D to isometric 2D coordinates
+function toIsometric(x: number, y: number, z: number, cubeSize: number): { sx: number; sy: number } {
+  const isoX = (x - z) * cubeSize * 0.866;
+  const isoY = (x + z) * cubeSize * 0.5 - y * cubeSize;
+  return { sx: isoX, sy: isoY };
+}
+
+// Draw isometric cube
+function drawIsoCube(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  z: number,
+  cubeSize: number,
+  baseColor: string,
+  cx: number,
+  cy: number
+) {
+  const { sx, sy } = toIsometric(x, y, z, cubeSize);
+  const px = cx + sx;
+  const py = cy + sy;
+
+  const s = cubeSize;
+  const h = s * 0.5;
+  const w = s * 0.866;
+
+  // Top face (lightest)
+  ctx.fillStyle = baseColor;
+  ctx.beginPath();
+  ctx.moveTo(px, py - s);
+  ctx.lineTo(px + w, py - h);
+  ctx.lineTo(px, py);
+  ctx.lineTo(px - w, py - h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#0a0a0f";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Left face (medium)
+  ctx.fillStyle = shadeColor(baseColor, -20);
+  ctx.beginPath();
+  ctx.moveTo(px - w, py - h);
+  ctx.lineTo(px, py);
+  ctx.lineTo(px, py + s);
+  ctx.lineTo(px - w, py + h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Right face (darkest)
+  ctx.fillStyle = shadeColor(baseColor, -40);
+  ctx.beginPath();
+  ctx.moveTo(px + w, py - h);
+  ctx.lineTo(px + w, py + h);
+  ctx.lineTo(px, py + s);
+  ctx.lineTo(px, py);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+
+function shadeColor(color: string, percent: number): string {
+  const num = parseInt(color.replace("#", ""), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+  const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00ff) + amt));
+  const B = Math.max(0, Math.min(255, (num & 0x0000ff) + amt));
+  return `#${(0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1)}`;
+}
+
+function drawShape3D(ctx: CanvasRenderingContext2D, shape: Block3D[], cx: number, cy: number, color: string) {
+  const cubeSize = 32;
+
+  // Sort by depth for proper rendering (painter's algorithm)
+  const sorted = [...shape].sort((a, b) => {
+    const depthA = a.x + a.z - a.y;
+    const depthB = b.x + b.z - b.y;
+    return depthA - depthB;
+  });
+
+  sorted.forEach((b) => {
+    drawIsoCube(ctx, b.x, b.y, b.z, cubeSize, color, cx, cy);
   });
 }
 
 interface Trial {
-  leftShape: Block[];
-  rightShape: Block[];
+  leftShape: Block3D[];
+  rightShape: Block3D[];
   isSame: boolean;
 }
 
-function generateTrial(difficulty: number): Trial {
-  const base = generateShape();
-  const angles = [90, 180, 270];
-  const angle = angles[Math.floor(Math.random() * angles.length)];
-  const rotated = rotateShape(base, angle);
+function generateTrial(): Trial {
+  const base = generateShape3D();
+
+  // Random rotation
+  const rotations = [90, 180, 270];
+  const yRot = rotations[Math.floor(Math.random() * rotations.length)];
+  let rotated = rotateY(base, yRot);
+
+  // Sometimes also rotate X
+  if (Math.random() > 0.5) {
+    const xRot = rotations[Math.floor(Math.random() * rotations.length)];
+    rotated = rotateX(rotated, xRot);
+  }
 
   const isSame = Math.random() > 0.5;
 
   return {
     leftShape: base,
-    rightShape: isSame ? rotated : mirrorShape(rotated),
+    rightShape: isSame ? rotated : mirrorShape3D(rotated),
     isSame,
   };
 }
@@ -100,12 +188,11 @@ function MentalRotationGame({
   const [correct, setCorrect] = useState(0);
   const [times, setTimes] = useState<number[]>([]);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
-  const [trial, setTrial] = useState<Trial>(() => generateTrial(0));
+  const [trial, setTrial] = useState<Trial>(() => generateTrial());
   const leftCanvasRef = useRef<HTMLCanvasElement>(null);
   const rightCanvasRef = useRef<HTMLCanvasElement>(null);
   const trialStartRef = useRef(performance.now());
 
-  // Draw both shapes with DPI scaling
   useEffect(() => {
     const leftCanvas = leftCanvasRef.current;
     const rightCanvas = rightCanvasRef.current;
@@ -124,23 +211,35 @@ function MentalRotationGame({
     leftCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     rightCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    leftCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    rightCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-    // Dark background
-    leftCtx.fillStyle = "#1a1a2e";
+    // Clear with dark background
+    leftCtx.fillStyle = "#18181b";
     leftCtx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    rightCtx.fillStyle = "#1a1a2e";
+    rightCtx.fillStyle = "#18181b";
     rightCtx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-    drawShape(leftCtx, trial.leftShape, CANVAS_SIZE / 2, CANVAS_SIZE / 2, "#4f8fff");
-    drawShape(rightCtx, trial.rightShape, CANVAS_SIZE / 2, CANVAS_SIZE / 2, "#4f8fff");
+    drawShape3D(leftCtx, trial.leftShape, CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 30, "#3b82f6");
+    drawShape3D(rightCtx, trial.rightShape, CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 30, "#3b82f6");
 
     trialStartRef.current = performance.now();
   }, [trial]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (feedback) return;
+      if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+        handleAnswer("same");
+      } else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+        handleAnswer("different");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
+
   const handleAnswer = useCallback(
     (answer: "same" | "different") => {
+      if (feedback) return;
       const rt = performance.now() - trialStartRef.current;
       const isCorrect =
         (answer === "same" && trial.isSame) ||
@@ -166,10 +265,10 @@ function MentalRotationGame({
           return;
         }
         setRound(nextRound);
-        setTrial(generateTrial(Math.floor(nextRound / 3)));
-      }, 500);
+        setTrial(generateTrial());
+      }, 400);
     },
-    [trial, round, correct, times, onComplete]
+    [trial, round, correct, times, onComplete, feedback]
   );
 
   return (
@@ -178,32 +277,32 @@ function MentalRotationGame({
       animate={{ opacity: 1 }}
       className="flex flex-col items-center gap-6"
     >
-      <div className="flex gap-6 text-center">
+      <div className="flex gap-8 text-center">
         <div>
-          <p className="text-sm text-muted">Round</p>
-          <p className="font-mono font-bold">{round + 1}/{TOTAL_ROUNDS}</p>
+          <p className="text-xs text-muted uppercase tracking-wider">Round</p>
+          <p className="text-2xl font-mono font-bold">{round + 1}<span className="text-muted">/{TOTAL_ROUNDS}</span></p>
         </div>
         <div>
-          <p className="text-sm text-muted">Correct</p>
-          <p className="font-mono font-bold text-success">{correct}</p>
+          <p className="text-xs text-muted uppercase tracking-wider">Correct</p>
+          <p className="text-2xl font-mono font-bold text-success">{correct}</p>
         </div>
       </div>
 
-      <p className="text-sm text-muted">Are these the same shape (just rotated)?</p>
+      <p className="text-muted">Same shape, just rotated?</p>
 
       <div className="flex gap-4 sm:gap-8 items-center">
         <canvas
           ref={leftCanvasRef}
           width={CANVAS_SIZE}
           height={CANVAS_SIZE}
-          className="w-36 h-36 sm:w-44 sm:h-44 rounded-xl border border-border"
+          className="w-40 h-40 sm:w-56 sm:h-56 rounded-xl border border-white/[0.06]"
         />
-        <span className="text-2xl font-bold text-muted">vs</span>
+        <span className="text-2xl font-bold text-muted/40">vs</span>
         <canvas
           ref={rightCanvasRef}
           width={CANVAS_SIZE}
           height={CANVAS_SIZE}
-          className="w-36 h-36 sm:w-44 sm:h-44 rounded-xl border border-border"
+          className="w-40 h-40 sm:w-56 sm:h-56 rounded-xl border border-white/[0.06]"
         />
       </div>
 
@@ -211,24 +310,32 @@ function MentalRotationGame({
         <button
           onClick={() => handleAnswer("same")}
           disabled={feedback !== null}
-          className="rounded-lg bg-success/20 text-success px-8 py-3 font-semibold hover:bg-success/30 transition-colors cursor-pointer disabled:opacity-50"
+          className="rounded-xl bg-accent/10 border border-accent/20 text-accent px-8 py-4 font-semibold hover:bg-accent/20 transition-all cursor-pointer disabled:opacity-50"
         >
+          <span className="block text-xs text-accent/60 mb-1">← A</span>
           Same
         </button>
         <button
           onClick={() => handleAnswer("different")}
           disabled={feedback !== null}
-          className="rounded-lg bg-error/20 text-error px-8 py-3 font-semibold hover:bg-error/30 transition-colors cursor-pointer disabled:opacity-50"
+          className="rounded-xl bg-violet/10 border border-violet/20 text-violet px-8 py-4 font-semibold hover:bg-violet/20 transition-all cursor-pointer disabled:opacity-50"
         >
+          <span className="block text-xs text-violet/60 mb-1">D →</span>
           Different
         </button>
       </div>
 
-      {feedback && (
-        <p className={`text-sm font-medium ${feedback === "correct" ? "text-success" : "text-error"}`}>
-          {feedback === "correct" ? "Correct!" : `Wrong! They were ${trial.isSame ? "the same" : "different"}`}
-        </p>
-      )}
+      <div className="h-6">
+        {feedback && (
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`text-sm font-medium ${feedback === "correct" ? "text-success" : "text-error"}`}
+          >
+            {feedback === "correct" ? "Correct!" : `Wrong! They were ${trial.isSame ? "the same" : "different"}`}
+          </motion.p>
+        )}
+      </div>
     </motion.div>
   );
 }
@@ -240,8 +347,9 @@ export default function MentalRotationPage() {
       config={config}
       instructions={
         <p>
-          Two shapes will appear side by side. One may be rotated. Decide if they are the
+          Two 3D shapes will appear. One may be rotated in space. Decide if they are the
           <strong> same shape</strong> (just rotated) or <strong>different</strong> (mirrored).
+          Use A/D or arrow keys for quick responses.
         </p>
       }
     >
