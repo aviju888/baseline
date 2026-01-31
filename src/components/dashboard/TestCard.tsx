@@ -34,7 +34,7 @@ export function TestCard({ test, bestScore, recentScores, index }: TestCardProps
       <Link href={test.route} className="group block">
         <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-5 transition-colors duration-150 hover:bg-white/[0.04]">
           <div className="flex items-start gap-4">
-            <Icon className={`h-6 w-6 shrink-0 mt-0.5 ${categoryColor}`} />
+            <Icon className={`h-9 w-9 shrink-0 ${categoryColor}`} weight="light" />
             <div className="min-w-0 flex-1">
               <h3 className={`font-medium ${categoryColor}`}>{test.name}</h3>
               <p className="mt-1 text-sm text-muted line-clamp-2">{test.description}</p>

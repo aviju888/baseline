@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 
 export type TestId =
   | "reaction-time"
@@ -41,7 +41,7 @@ export interface TestConfig {
   name: string;
   description: string;
   category: CategoryId;
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   route: string;
   scoreUnit: string;
   scoreLabel: string;
