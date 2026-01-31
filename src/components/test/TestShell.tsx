@@ -8,13 +8,13 @@ import { InstructionsScreen } from "./InstructionsScreen";
 import { ResultsScreen } from "./ResultsScreen";
 import { CountdownOverlay } from "./CountdownOverlay";
 import { TestErrorBoundary } from "./TestErrorBoundary";
+import { getTestDifficulty, GameSettings } from "@/lib/tests/difficulty";
 import type { TestConfig, TestPhase } from "@/types/tests";
-import type { ScoreEntry, TestHistory } from "@/types/scores";
+import type { ScoreEntry, TestHistory, DifficultyLevel } from "@/types/scores";
 
 // TODO: TestShell improvements
 // - Add keyboard shortcut to restart (press R)
 // - Add "Esc to quit" during active test (confirm dialog)
-// - Add difficulty selector on instructions screen (easy/medium/hard)
 // - Add sound effects for countdown beeps (3, 2, 1, go!)
 // - Add error boundary to catch crashes during tests
 // - Add prefers-reduced-motion support (skip animations)
@@ -26,6 +26,8 @@ interface TestShellProps {
   children: (props: {
     phase: TestPhase;
     onComplete: (score: number, metadata?: Record<string, unknown>) => void;
+    difficulty?: DifficultyLevel;
+    settings?: GameSettings;
   }) => React.ReactNode;
 }
 
@@ -42,10 +44,22 @@ export function TestShell({
   const [history, setHistory] = useState<TestHistory | null>(null);
   const [testStartTime, setTestStartTime] = useState(0);
 
-  // Load history on mount
+  // Difficulty support
+  const difficultyConfig = getTestDifficulty(config.id);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel>(
+    difficultyConfig?.defaultLevel ?? "normal"
+  );
+
+  // Get current preset settings
+  const currentPreset = difficultyConfig?.presets.find(
+    (p) => p.level === selectedDifficulty
+  );
+
+  // Load history on mount and when difficulty changes
   useEffect(() => {
-    storage.getTestHistory(config.id, config.scoreSortOrder).then(setHistory);
-  }, [storage, config.id, config.scoreSortOrder]);
+    const difficulty = difficultyConfig ? selectedDifficulty : undefined;
+    storage.getTestHistory(config.id, config.scoreSortOrder, difficulty).then(setHistory);
+  }, [storage, config.id, config.scoreSortOrder, difficultyConfig, selectedDifficulty]);
 
   const handleStart = useCallback(() => {
     if (showCountdown) {
@@ -74,13 +88,15 @@ export function TestShell({
         timestamp: Date.now(),
         duration: performance.now() - testStartTime,
         metadata,
+        difficulty: difficultyConfig ? selectedDifficulty : undefined,
       };
 
       await storage.saveScore(entry);
-      const updated = await storage.getTestHistory(config.id, config.scoreSortOrder);
+      const difficulty = difficultyConfig ? selectedDifficulty : undefined;
+      const updated = await storage.getTestHistory(config.id, config.scoreSortOrder, difficulty);
       setHistory(updated);
     },
-    [config, storage, finishTest, testStartTime]
+    [config, storage, finishTest, testStartTime, difficultyConfig, selectedDifficulty]
   );
 
   const handleRestart = useCallback(() => {
@@ -101,6 +117,9 @@ export function TestShell({
           icon={config.icon}
           instructions={instructions}
           onStart={handleStart}
+          difficultyConfig={difficultyConfig}
+          selectedDifficulty={selectedDifficulty}
+          onDifficultyChange={setSelectedDifficulty}
         />
       )}
 
@@ -110,7 +129,12 @@ export function TestShell({
 
       {phase === "active" && (
         <TestErrorBoundary onReset={handleRestart}>
-          {children({ phase, onComplete: handleComplete })}
+          {children({
+            phase,
+            onComplete: handleComplete,
+            difficulty: selectedDifficulty,
+            settings: currentPreset?.settings,
+          })}
         </TestErrorBoundary>
       )}
 
@@ -127,6 +151,7 @@ export function TestShell({
           scoreSortOrder={config.scoreSortOrder}
           onClearHistory={handleClearHistory}
           testName={config.name}
+          difficulty={difficultyConfig ? selectedDifficulty : undefined}
         />
       )}
     </div>

@@ -5,18 +5,24 @@ import { TestShell } from "@/components/test/TestShell";
 import { testMap } from "@/lib/tests/registry";
 import { mean } from "@/lib/scoring/statistics";
 import { motion } from "framer-motion";
+import type { AimTrainerSettings } from "@/lib/tests/difficulty";
 
-const TOTAL_TARGETS = 30;
-const TARGET_SIZE = 60;
+const DEFAULT_TOTAL_TARGETS = 30;
+const DEFAULT_TARGET_SIZE = 60;
 
 function AimTrainerGame({
   onComplete,
+  settings,
 }: {
   onComplete: (score: number, metadata?: Record<string, unknown>) => void;
+  settings?: AimTrainerSettings;
 }) {
+  const totalTargets = settings?.totalTargets ?? DEFAULT_TOTAL_TARGETS;
+  const targetSize = settings?.targetSize ?? DEFAULT_TARGET_SIZE;
+
   const [target, setTarget] = useState({ x: 50, y: 50 });
   const [times, setTimes] = useState<number[]>([]);
-  const [remaining, setRemaining] = useState(TOTAL_TARGETS);
+  const [remaining, setRemaining] = useState(totalTargets);
   const lastClickRef = useRef(performance.now());
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -68,10 +74,10 @@ function AimTrainerGame({
           onClick={handleTargetClick}
           className="absolute rounded-full bg-accent hover:bg-accent-hover transition-all duration-100 cursor-crosshair hover:scale-95 active:scale-90"
           style={{
-            width: TARGET_SIZE,
-            height: TARGET_SIZE,
-            left: `calc(${target.x}% - ${TARGET_SIZE / 2}px)`,
-            top: `calc(${target.y}% - ${TARGET_SIZE / 2}px)`,
+            width: targetSize,
+            height: targetSize,
+            left: `calc(${target.x}% - ${targetSize / 2}px)`,
+            top: `calc(${target.y}% - ${targetSize / 2}px)`,
           }}
         />
       </div>
@@ -83,7 +89,12 @@ export default function AimTrainerPage() {
   const config = testMap["aim-trainer"];
   return (
     <TestShell config={config} showCountdown>
-      {({ onComplete }) => <AimTrainerGame onComplete={onComplete} />}
+      {({ onComplete, settings }) => (
+        <AimTrainerGame
+          onComplete={onComplete}
+          settings={settings as AimTrainerSettings | undefined}
+        />
+      )}
     </TestShell>
   );
 }

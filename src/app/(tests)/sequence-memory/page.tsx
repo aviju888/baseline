@@ -5,29 +5,37 @@ import { TestShell } from "@/components/test/TestShell";
 import { testMap } from "@/lib/tests/registry";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import type { SequenceMemorySettings } from "@/lib/tests/difficulty";
 
-const GRID_SIZE = 3;
-const INITIAL_LENGTH = 3;
-const FLASH_DURATION = 600;
-const FLASH_GAP = 300;
+const DEFAULT_GRID_SIZE = 3;
+const DEFAULT_INITIAL_LENGTH = 3;
+const DEFAULT_FLASH_DURATION = 600;
+const DEFAULT_FLASH_GAP = 300;
 
 function SequenceMemoryGame({
   onComplete,
+  settings,
 }: {
   onComplete: (score: number, metadata?: Record<string, unknown>) => void;
+  settings?: SequenceMemorySettings;
 }) {
+  const gridSize = settings?.gridSize ?? DEFAULT_GRID_SIZE;
+  const initialLength = settings?.initialLength ?? DEFAULT_INITIAL_LENGTH;
+  const flashDuration = settings?.flashDuration ?? DEFAULT_FLASH_DURATION;
+  const flashGap = settings?.flashGap ?? DEFAULT_FLASH_GAP;
+
   const [sequence, setSequence] = useState<number[]>([]);
   const [userInput, setUserInput] = useState<number[]>([]);
   const [showingSequence, setShowingSequence] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [level, setLevel] = useState(INITIAL_LENGTH);
+  const [level, setLevel] = useState(initialLength);
   const [flashedTile, setFlashedTile] = useState<number | null>(null);
   const [wrongTile, setWrongTile] = useState<number | null>(null);
   const [started, setStarted] = useState(false);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const generateSequence = useCallback((length: number) => {
-    const totalTiles = GRID_SIZE * GRID_SIZE;
+    const totalTiles = gridSize * gridSize;
     const seq: number[] = [];
     for (let i = 0; i < length; i++) {
       seq.push(Math.floor(Math.random() * totalTiles));
@@ -44,20 +52,20 @@ function SequenceMemoryGame({
     seq.forEach((tile, i) => {
       const showTimeout = setTimeout(() => {
         setActiveIndex(tile);
-      }, i * (FLASH_DURATION + FLASH_GAP));
+      }, i * (flashDuration + flashGap));
 
       const hideTimeout = setTimeout(() => {
         setActiveIndex(null);
-      }, i * (FLASH_DURATION + FLASH_GAP) + FLASH_DURATION);
+      }, i * (flashDuration + flashGap) + flashDuration);
 
       timeoutsRef.current.push(showTimeout, hideTimeout);
     });
 
     const endTimeout = setTimeout(() => {
       setShowingSequence(false);
-    }, seq.length * (FLASH_DURATION + FLASH_GAP));
+    }, seq.length * (flashDuration + flashGap));
     timeoutsRef.current.push(endTimeout);
-  }, []);
+  }, [flashDuration, flashGap]);
 
   const startLevel = useCallback(
     (lvl: number) => {
@@ -72,12 +80,12 @@ function SequenceMemoryGame({
   useEffect(() => {
     if (!started) {
       setStarted(true);
-      startLevel(INITIAL_LENGTH);
+      startLevel(initialLength);
     }
     return () => {
       timeoutsRef.current.forEach(clearTimeout);
     };
-  }, [started, startLevel]);
+  }, [started, startLevel, initialLength]);
 
   const handleTileClick = useCallback(
     (index: number) => {
@@ -122,10 +130,10 @@ function SequenceMemoryGame({
       <div
         className="grid gap-3 sm:gap-4"
         style={{
-          gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+          gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
         }}
       >
-        {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => (
+        {Array.from({ length: gridSize * gridSize }).map((_, i) => (
           <button
             key={i}
             onClick={() => handleTileClick(i)}
@@ -158,7 +166,12 @@ export default function SequenceMemoryPage() {
   const config = testMap["sequence-memory"];
   return (
     <TestShell config={config}>
-      {({ onComplete }) => <SequenceMemoryGame onComplete={onComplete} />}
+      {({ onComplete, settings }) => (
+        <SequenceMemoryGame
+          onComplete={onComplete}
+          settings={settings as SequenceMemorySettings | undefined}
+        />
+      )}
     </TestShell>
   );
 }

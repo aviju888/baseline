@@ -1,5 +1,5 @@
 import type { TestId } from "@/types/tests";
-import type { ScoreEntry, TestHistory, StorageData } from "@/types/scores";
+import type { ScoreEntry, TestHistory, StorageData, DifficultyLevel } from "@/types/scores";
 import type { StorageService } from "./types";
 
 const STORAGE_KEY = "baseline_data";
@@ -69,31 +69,37 @@ export class LocalStorageService implements StorageService {
     writeData(data);
   }
 
-  async getScores(testId: TestId): Promise<ScoreEntry[]> {
+  async getScores(testId: TestId, difficulty?: DifficultyLevel): Promise<ScoreEntry[]> {
     const data = readData();
-    return data.scores[testId] ?? [];
+    let scores = data.scores[testId] ?? [];
+    if (difficulty) {
+      scores = scores.filter((s) => s.difficulty === difficulty);
+    }
+    return scores;
   }
 
   async getBestScore(
     testId: TestId,
-    sortOrder: "asc" | "desc"
+    sortOrder: "asc" | "desc",
+    difficulty?: DifficultyLevel
   ): Promise<number | null> {
-    const scores = await this.getScores(testId);
+    const scores = await this.getScores(testId, difficulty);
     if (scores.length === 0) return null;
     const values = scores.map((s) => s.score);
     return sortOrder === "asc" ? Math.min(...values) : Math.max(...values);
   }
 
-  async getRecentScores(testId: TestId, limit: number): Promise<ScoreEntry[]> {
-    const scores = await this.getScores(testId);
+  async getRecentScores(testId: TestId, limit: number, difficulty?: DifficultyLevel): Promise<ScoreEntry[]> {
+    const scores = await this.getScores(testId, difficulty);
     return scores.slice(-limit);
   }
 
   async getTestHistory(
     testId: TestId,
-    sortOrder: "asc" | "desc"
+    sortOrder: "asc" | "desc",
+    difficulty?: DifficultyLevel
   ): Promise<TestHistory | null> {
-    const scores = await this.getScores(testId);
+    const scores = await this.getScores(testId, difficulty);
     if (scores.length === 0) return null;
     return computeHistory(testId, scores, sortOrder);
   }

@@ -1,5 +1,5 @@
 import type { TestId } from "@/types/tests";
-import type { ScoreEntry, TestHistory } from "@/types/scores";
+import type { ScoreEntry, TestHistory, DifficultyLevel } from "@/types/scores";
 
 // TODO: Supabase integration
 // - Create SupabaseStorageService implementing this interface
@@ -15,10 +15,10 @@ import type { ScoreEntry, TestHistory } from "@/types/scores";
 
 export interface StorageService {
   saveScore(entry: ScoreEntry): Promise<void>;
-  getScores(testId: TestId): Promise<ScoreEntry[]>;
-  getBestScore(testId: TestId, sortOrder: "asc" | "desc"): Promise<number | null>;
-  getRecentScores(testId: TestId, limit: number): Promise<ScoreEntry[]>;
-  getTestHistory(testId: TestId, sortOrder: "asc" | "desc"): Promise<TestHistory | null>;
+  getScores(testId: TestId, difficulty?: DifficultyLevel): Promise<ScoreEntry[]>;
+  getBestScore(testId: TestId, sortOrder: "asc" | "desc", difficulty?: DifficultyLevel): Promise<number | null>;
+  getRecentScores(testId: TestId, limit: number, difficulty?: DifficultyLevel): Promise<ScoreEntry[]>;
+  getTestHistory(testId: TestId, sortOrder: "asc" | "desc", difficulty?: DifficultyLevel): Promise<TestHistory | null>;
   getAllHistory(sortOrders: Record<TestId, "asc" | "desc">): Promise<Partial<Record<TestId, TestHistory>>>;
   getTotalTestsTaken(): Promise<number>;
   clearTestScores(testId: TestId): Promise<void>;

@@ -5,6 +5,7 @@ import { TestShell } from "@/components/test/TestShell";
 import { testMap } from "@/lib/tests/registry";
 import { mean } from "@/lib/scoring/statistics";
 import { motion } from "framer-motion";
+import type { StroopTestSettings } from "@/lib/tests/difficulty";
 
 const COLORS = [
   { name: "Red", value: "#ef4444" },
@@ -14,7 +15,8 @@ const COLORS = [
   { name: "Purple", value: "#a855f7" },
 ];
 
-const TOTAL_ROUNDS = 20;
+const DEFAULT_TOTAL_ROUNDS = 20;
+const DEFAULT_INCONGRUENT_PROB = 0.7;
 
 interface Trial {
   word: string;
@@ -22,12 +24,11 @@ interface Trial {
   isCongruent: boolean;
 }
 
-function generateTrial(): Trial {
+function generateTrial(incongruentProbability: number): Trial {
   const wordIndex = Math.floor(Math.random() * COLORS.length);
   let colorIndex: number;
 
-  // 70% incongruent
-  if (Math.random() < 0.7) {
+  if (Math.random() < incongruentProbability) {
     do {
       colorIndex = Math.floor(Math.random() * COLORS.length);
     } while (colorIndex === wordIndex);
@@ -44,10 +45,15 @@ function generateTrial(): Trial {
 
 function StroopGame({
   onComplete,
+  settings,
 }: {
   onComplete: (score: number, metadata?: Record<string, unknown>) => void;
+  settings?: StroopTestSettings;
 }) {
-  const [trial, setTrial] = useState<Trial>(() => generateTrial());
+  const totalRounds = settings?.totalRounds ?? DEFAULT_TOTAL_ROUNDS;
+  const incongruentProbability = settings?.incongruentProbability ?? DEFAULT_INCONGRUENT_PROB;
+
+  const [trial, setTrial] = useState<Trial>(() => generateTrial(incongruentProbability));
   const [round, setRound] = useState(0);
   const [times, setTimes] = useState<number[]>([]);
   const [correct, setCorrect] = useState(0);
@@ -73,21 +79,21 @@ function StroopGame({
       setTimeout(() => {
         setFeedback(null);
         const nextRound = round + 1;
-        if (nextRound >= TOTAL_ROUNDS) {
+        if (nextRound >= totalRounds) {
           const allTimes = isCorrect ? [...times, rt] : times;
           const avg = allTimes.length > 0 ? Math.round(mean(allTimes)) : 0;
           onComplete(avg, {
             correct: isCorrect ? correct + 1 : correct,
-            total: TOTAL_ROUNDS,
+            total: totalRounds,
             times: allTimes,
           });
           return;
         }
         setRound(nextRound);
-        setTrial(generateTrial());
+        setTrial(generateTrial(incongruentProbability));
       }, 300);
     },
-    [trial, round, times, correct, onComplete]
+    [trial, round, times, correct, onComplete, totalRounds, incongruentProbability]
   );
 
   return (
@@ -99,7 +105,7 @@ function StroopGame({
       <div className="flex gap-6 text-center">
         <div>
           <p className="text-sm text-muted">Round</p>
-          <p className="font-mono font-bold">{round + 1}/{TOTAL_ROUNDS}</p>
+          <p className="font-mono font-bold">{round + 1}/{totalRounds}</p>
         </div>
         <div>
           <p className="text-sm text-muted">Correct</p>
@@ -155,7 +161,12 @@ export default function StroopTestPage() {
         </p>
       }
     >
-      {({ onComplete }) => <StroopGame onComplete={onComplete} />}
+      {({ onComplete, settings }) => (
+        <StroopGame
+          onComplete={onComplete}
+          settings={settings as StroopTestSettings | undefined}
+        />
+      )}
     </TestShell>
   );
 }

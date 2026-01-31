@@ -4,21 +4,28 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { TestShell } from "@/components/test/TestShell";
 import { testMap } from "@/lib/tests/registry";
 import { motion } from "framer-motion";
+import type { MentalMathSettings } from "@/lib/tests/difficulty";
 
-const DURATION = 60_000; // 60 seconds
+const DEFAULT_DURATION = 60_000;
+const DEFAULT_STARTING_MAX = 15;
+const DEFAULT_INCLUDE_MULT = true;
 
 interface Problem {
   text: string;
   answer: number;
 }
 
-function generateProblem(difficulty: number): Problem {
-  const ops = ["+", "-", "×"];
+function generateProblem(
+  difficulty: number,
+  startingMaxNumber: number,
+  includeMultiplication: boolean
+): Problem {
+  const ops = includeMultiplication ? ["+", "-", "×"] : ["+", "-"];
   const op = ops[Math.floor(Math.random() * Math.min(ops.length, 1 + difficulty))];
 
   let a: number, b: number, answer: number;
 
-  const maxNum = Math.min(10 + difficulty * 5, 99);
+  const maxNum = Math.min(startingMaxNumber + difficulty * 5, 99);
 
   if (op === "+") {
     a = Math.floor(Math.random() * maxNum) + 1;
@@ -39,13 +46,21 @@ function generateProblem(difficulty: number): Problem {
 
 function MentalMathGame({
   onComplete,
+  settings,
 }: {
   onComplete: (score: number, metadata?: Record<string, unknown>) => void;
+  settings?: MentalMathSettings;
 }) {
-  const [problem, setProblem] = useState<Problem>(() => generateProblem(0));
+  const duration = settings?.duration ?? DEFAULT_DURATION;
+  const startingMaxNumber = settings?.startingMaxNumber ?? DEFAULT_STARTING_MAX;
+  const includeMultiplication = settings?.includeMultiplication ?? DEFAULT_INCLUDE_MULT;
+
+  const [problem, setProblem] = useState<Problem>(() =>
+    generateProblem(0, startingMaxNumber, includeMultiplication)
+  );
   const [input, setInput] = useState("");
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(Math.round(duration / 1000));
   const [streak, setStreak] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef(Date.now());
@@ -58,14 +73,14 @@ function MentalMathGame({
   useEffect(() => {
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
-      const left = Math.max(0, Math.ceil((DURATION - elapsed) / 1000));
+      const left = Math.max(0, Math.ceil((duration - elapsed) / 1000));
       setTimeLeft(left);
       if (left <= 0) {
         clearInterval(interval);
       }
     }, 100);
     return () => clearInterval(interval);
-  }, []);
+  }, [duration]);
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -83,15 +98,15 @@ function MentalMathGame({
         setStreak(newStreak);
         setScore((s) => s + 1);
         const difficulty = Math.floor(newStreak / 3);
-        setProblem(generateProblem(difficulty));
+        setProblem(generateProblem(difficulty, startingMaxNumber, includeMultiplication));
       } else {
         setStreak(0);
-        setProblem(generateProblem(0));
+        setProblem(generateProblem(0, startingMaxNumber, includeMultiplication));
       }
       setInput("");
       inputRef.current?.focus();
     },
-    [input, problem, streak, timeLeft]
+    [input, problem, streak, timeLeft, startingMaxNumber, includeMultiplication]
   );
 
   return (
@@ -144,10 +159,15 @@ export default function MentalMathPage() {
   return (
     <TestShell
       config={config}
-      instructions={<p>Solve as many arithmetic problems as you can in 60 seconds. Problems get harder as you build a streak.</p>}
+      instructions={<p>Solve as many arithmetic problems as you can before time runs out. Problems get harder as you build a streak.</p>}
       showCountdown
     >
-      {({ onComplete }) => <MentalMathGame onComplete={onComplete} />}
+      {({ onComplete, settings }) => (
+        <MentalMathGame
+          onComplete={onComplete}
+          settings={settings as MentalMathSettings | undefined}
+        />
+      )}
     </TestShell>
   );
 }

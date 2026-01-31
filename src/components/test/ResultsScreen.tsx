@@ -10,6 +10,13 @@ import { formatScore } from "@/lib/scoring/statistics";
 import { shareResult } from "@/lib/share";
 import { RotateCcw, Home, Trash2, Share2 } from "lucide-react";
 import Link from "next/link";
+import type { DifficultyLevel } from "@/types/scores";
+
+const difficultyLabels: Record<DifficultyLevel, string> = {
+  easy: "Easy",
+  normal: "Normal",
+  hard: "Hard",
+};
 
 function getScoreFormatter(unit: string): (n: number) => string {
   if (unit === "ms") return (n) => `${Math.round(n)} ms`;
@@ -33,6 +40,7 @@ interface ResultsScreenProps {
   scoreSortOrder?: "asc" | "desc";
   onClearHistory?: () => void;
   testName?: string;
+  difficulty?: DifficultyLevel;
 }
 
 export function ResultsScreen({
@@ -47,6 +55,7 @@ export function ResultsScreen({
   scoreSortOrder = "desc",
   onClearHistory,
   testName,
+  difficulty,
 }: ResultsScreenProps) {
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -77,7 +86,14 @@ export function ResultsScreen({
       className="flex flex-col items-center justify-center gap-8 text-center px-4"
     >
       <div className="space-y-2">
-        <p className="text-sm text-muted uppercase tracking-wider">{scoreLabel}</p>
+        <div className="flex items-center justify-center gap-2">
+          <p className="text-sm text-muted uppercase tracking-wider">{scoreLabel}</p>
+          {difficulty && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-surface-light text-muted">
+              {difficultyLabels[difficulty]}
+            </span>
+          )}
+        </div>
         <div className="text-6xl font-bold font-mono text-accent">
           <AnimatedNumber
             value={score}

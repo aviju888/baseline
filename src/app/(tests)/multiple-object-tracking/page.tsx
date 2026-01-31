@@ -5,6 +5,7 @@ import { TestShell } from "@/components/test/TestShell";
 import { testMap } from "@/lib/tests/registry";
 import { useCanvas } from "@/hooks/useCanvas";
 import { motion } from "framer-motion";
+import type { MOTSettings } from "@/lib/tests/difficulty";
 
 interface Ball {
   x: number;
@@ -17,21 +18,22 @@ interface Ball {
 }
 
 const BALL_RADIUS = 18;
-const SPEED = 80;
+const DEFAULT_SPEED = 80;
 const HIGHLIGHT_DURATION = 2000;
-const TRACKING_DURATION = 5000;
+const DEFAULT_TRACKING_DURATION = 5000;
+const DEFAULT_STARTING_LEVEL = 1;
 
 type Phase = "highlight" | "tracking" | "select" | "result";
 
-function createBalls(totalBalls: number, targetCount: number, w: number, h: number): Ball[] {
+function createBalls(totalBalls: number, targetCount: number, w: number, h: number, speed: number): Ball[] {
   const balls: Ball[] = [];
   for (let i = 0; i < totalBalls; i++) {
     const angle = Math.random() * Math.PI * 2;
     balls.push({
       x: BALL_RADIUS + Math.random() * (w - BALL_RADIUS * 2),
       y: BALL_RADIUS + Math.random() * (h - BALL_RADIUS * 2),
-      vx: Math.cos(angle) * SPEED,
-      vy: Math.sin(angle) * SPEED,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
       isTarget: i < targetCount,
       selected: false,
       radius: BALL_RADIUS,
@@ -42,10 +44,16 @@ function createBalls(totalBalls: number, targetCount: number, w: number, h: numb
 
 function MOTGame({
   onComplete,
+  settings,
 }: {
   onComplete: (score: number, metadata?: Record<string, unknown>) => void;
+  settings?: MOTSettings;
 }) {
-  const [level, setLevel] = useState(1);
+  const startingLevel = settings?.startingLevel ?? DEFAULT_STARTING_LEVEL;
+  const ballSpeed = settings?.ballSpeed ?? DEFAULT_SPEED;
+  const trackingDuration = settings?.trackingDuration ?? DEFAULT_TRACKING_DURATION;
+
+  const [level, setLevel] = useState(startingLevel);
   const [phase, setPhase] = useState<Phase>("highlight");
   const [lives, setLives] = useState(3);
   const [selectedCount, setSelectedCount] = useState(0);
@@ -59,7 +67,7 @@ function MOTGame({
   const initRound = useCallback(() => {
     const w = containerRef.current?.clientWidth ?? 600;
     const h = containerRef.current?.clientHeight ?? 400;
-    ballsRef.current = createBalls(totalBalls, targetCount, w, h);
+    ballsRef.current = createBalls(totalBalls, targetCount, w, h, ballSpeed);
     setPhase("highlight");
     phaseRef.current = "highlight";
     setSelectedCount(0);
@@ -70,9 +78,9 @@ function MOTGame({
       setTimeout(() => {
         setPhase("select");
         phaseRef.current = "select";
-      }, TRACKING_DURATION);
+      }, trackingDuration);
     }, HIGHLIGHT_DURATION);
-  }, [totalBalls, targetCount]);
+  }, [totalBalls, targetCount, ballSpeed, trackingDuration]);
 
   useEffect(() => {
     initRound();
@@ -226,7 +234,12 @@ export default function MOTPage() {
         </p>
       }
     >
-      {({ onComplete }) => <MOTGame onComplete={onComplete} />}
+      {({ onComplete, settings }) => (
+        <MOTGame
+          onComplete={onComplete}
+          settings={settings as MOTSettings | undefined}
+        />
+      )}
     </TestShell>
   );
 }

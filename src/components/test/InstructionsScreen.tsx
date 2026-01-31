@@ -2,6 +2,9 @@
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { DifficultySelector } from "./DifficultySelector";
+import { TestDifficultyConfig, GameSettings } from "@/lib/tests/difficulty";
+import { DifficultyLevel } from "@/types/scores";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 
 interface InstructionsScreenProps {
@@ -10,6 +13,9 @@ interface InstructionsScreenProps {
   icon: PhosphorIcon;
   instructions?: React.ReactNode;
   onStart: () => void;
+  difficultyConfig?: TestDifficultyConfig<GameSettings>;
+  selectedDifficulty?: DifficultyLevel;
+  onDifficultyChange?: (level: DifficultyLevel) => void;
 }
 
 export function InstructionsScreen({
@@ -18,6 +24,9 @@ export function InstructionsScreen({
   icon: Icon,
   instructions,
   onStart,
+  difficultyConfig,
+  selectedDifficulty,
+  onDifficultyChange,
 }: InstructionsScreenProps) {
   return (
     <motion.div
@@ -38,6 +47,14 @@ export function InstructionsScreen({
         <div className="max-w-md text-sm text-muted leading-relaxed">
           {instructions}
         </div>
+      )}
+
+      {difficultyConfig && selectedDifficulty && onDifficultyChange && (
+        <DifficultySelector
+          presets={difficultyConfig.presets}
+          selected={selectedDifficulty}
+          onChange={onDifficultyChange}
+        />
       )}
 
       <Button size="lg" onClick={onStart}>
