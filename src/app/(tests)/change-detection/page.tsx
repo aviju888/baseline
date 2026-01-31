@@ -16,17 +16,18 @@ interface Shape {
 const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#eab308", "#a855f7", "#f97316"];
 const SHAPE_TYPES: Shape["type"][] = ["circle", "square", "triangle"];
 const TOTAL_ROUNDS = 10;
-const CANVAS_W = 500;
-const CANVAS_H = 360;
+const CANVAS_W = 800;
+const CANVAS_H = 500;
 const FLASH_DURATION = 1200;
 const GAP_DURATION = 300;
 
 function generateScene(shapeCount: number): Shape[] {
+  const padding = 50;
   return Array.from({ length: shapeCount }, () => ({
     type: SHAPE_TYPES[Math.floor(Math.random() * SHAPE_TYPES.length)],
-    x: 40 + Math.random() * 420,
-    y: 40 + Math.random() * 280,
-    size: 20 + Math.random() * 30,
+    x: padding + Math.random() * (CANVAS_W - padding * 2),
+    y: padding + Math.random() * (CANVAS_H - padding * 2),
+    size: 25 + Math.random() * 40,
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
   }));
 }
@@ -45,7 +46,7 @@ function modifyScene(shapes: Shape[]): { modified: Shape[]; changedIndex: number
       return { ...s, color: newColor };
     } else if (change === 1) {
       // Change position
-      return { ...s, x: s.x + (Math.random() > 0.5 ? 50 : -50), y: s.y + (Math.random() > 0.5 ? 40 : -40) };
+      return { ...s, x: s.x + (Math.random() > 0.5 ? 70 : -70), y: s.y + (Math.random() > 0.5 ? 50 : -50) };
     } else {
       // Change shape type
       let newType: Shape["type"];
@@ -217,7 +218,7 @@ function ChangeDetectionGame({
         </div>
       </div>
 
-      <div className="w-full max-w-lg aspect-[500/360] rounded-xl border border-border bg-surface overflow-hidden">
+      <div className="w-full max-w-4xl aspect-[800/500] rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
         <canvas
           ref={canvasRef}
           onClick={handleCanvasClick}

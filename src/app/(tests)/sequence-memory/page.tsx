@@ -112,15 +112,15 @@ function SequenceMemoryGame({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col items-center gap-6"
+      className="flex flex-col items-center gap-8"
     >
       <div className="text-center">
-        <p className="text-sm text-muted">Level</p>
-        <p className="text-3xl font-bold font-mono text-accent">{level}</p>
+        <p className="text-sm text-muted uppercase tracking-wider">Level</p>
+        <p className="text-5xl font-bold font-mono text-accent">{level}</p>
       </div>
 
       <div
-        className="grid gap-2"
+        className="grid gap-3 sm:gap-4"
         style={{
           gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
         }}
@@ -131,24 +131,25 @@ function SequenceMemoryGame({
             onClick={() => handleTileClick(i)}
             disabled={showingSequence}
             className={cn(
-              "h-20 w-20 sm:h-24 sm:w-24 rounded-lg transition-all duration-150 cursor-pointer",
+              "h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 rounded-xl transition-all duration-150 cursor-pointer",
               activeIndex === i || flashedTile === i
-                ? "bg-accent scale-95"
+                ? "bg-accent scale-95 shadow-lg shadow-accent/30"
                 : wrongTile === i
                 ? "bg-error scale-95"
-                : "bg-surface-light hover:bg-border",
+                : "bg-surface-light hover:bg-border-light",
               showingSequence && "cursor-default"
             )}
           />
         ))}
       </div>
 
-      {showingSequence && (
-        <p className="text-muted text-sm animate-pulse">Watch the sequence...</p>
-      )}
-      {!showingSequence && !wrongTile && (
-        <p className="text-muted text-sm">Your turn - repeat the pattern</p>
-      )}
+      <p className="text-muted text-sm h-5">
+        {showingSequence ? (
+          <span className="animate-pulse">Watch the sequence...</span>
+        ) : !wrongTile ? (
+          "Your turn"
+        ) : null}
+      </p>
     </motion.div>
   );
 }

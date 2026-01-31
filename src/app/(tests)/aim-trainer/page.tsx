@@ -52,20 +52,21 @@ function AimTrainerGame({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col items-center gap-4"
+      className="w-full px-4"
     >
-      <div className="text-center">
-        <p className="text-sm text-muted">Remaining</p>
-        <p className="text-2xl font-bold font-mono">{remaining}</p>
-      </div>
-
       <div
         ref={containerRef}
-        className="relative w-full aspect-[4/3] max-w-2xl rounded-xl border border-border bg-surface overflow-hidden"
+        className="relative w-full h-[75vh] max-h-[800px] rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden"
       >
+        {/* Remaining counter overlay */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-background/80 backdrop-blur-sm px-4 py-2 rounded-full border border-white/[0.06]">
+          <span className="text-sm text-muted">Remaining: </span>
+          <span className="font-mono font-bold text-foreground">{remaining}</span>
+        </div>
+
         <button
           onClick={handleTargetClick}
-          className="absolute rounded-full bg-accent hover:bg-accent-hover transition-colors cursor-pointer shadow-lg shadow-accent/30"
+          className="absolute rounded-full bg-accent hover:bg-accent-hover transition-all duration-100 cursor-crosshair hover:scale-95 active:scale-90"
           style={{
             width: TARGET_SIZE,
             height: TARGET_SIZE,
