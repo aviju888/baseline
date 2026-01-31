@@ -6,7 +6,8 @@ import type { TestId } from "./tests";
 // - Add UserRanking { testId, rank, percentile, totalPlayers }
 
 // TODO: Add userId field to ScoreEntry once auth is added
-// TODO: Add difficulty field to ScoreEntry for tests with configurable difficulty
+
+export type DifficultyLevel = "easy" | "normal" | "hard";
 
 export interface ScoreEntry {
   id: string;
@@ -16,6 +17,7 @@ export interface ScoreEntry {
   timestamp: number;
   duration: number;
   metadata: Record<string, unknown>;
+  difficulty?: DifficultyLevel;
 }
 
 export interface TestHistory {

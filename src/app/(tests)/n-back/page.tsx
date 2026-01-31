@@ -4,29 +4,30 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { TestShell } from "@/components/test/TestShell";
 import { testMap } from "@/lib/tests/registry";
 import { motion } from "framer-motion";
+import type { NBackSettings } from "@/lib/tests/difficulty";
 
 const GRID_SIZE = 3;
-const SEQUENCE_LENGTH = 20;
-const DISPLAY_TIME = 2000; // ms each stimulus is shown
-const N = 2;
+const DEFAULT_SEQUENCE_LENGTH = 20;
+const DEFAULT_DISPLAY_TIME = 2000;
+const DEFAULT_N = 2;
 const MATCH_PROBABILITY = 0.3;
 
-function generateSequence(): { positions: number[]; matches: boolean[] } {
+function generateSequence(n: number, sequenceLength: number): { positions: number[]; matches: boolean[] } {
   const totalCells = GRID_SIZE * GRID_SIZE;
   const positions: number[] = [];
   const matches: boolean[] = [];
 
-  for (let i = 0; i < SEQUENCE_LENGTH; i++) {
-    if (i >= N && Math.random() < MATCH_PROBABILITY) {
+  for (let i = 0; i < sequenceLength; i++) {
+    if (i >= n && Math.random() < MATCH_PROBABILITY) {
       // Make it a match
-      positions.push(positions[i - N]);
+      positions.push(positions[i - n]);
       matches.push(true);
     } else {
       // Make it a non-match
       let pos: number;
       do {
         pos = Math.floor(Math.random() * totalCells);
-      } while (i >= N && pos === positions[i - N]);
+      } while (i >= n && pos === positions[i - n]);
       positions.push(pos);
       matches.push(false);
     }
@@ -37,10 +38,16 @@ function generateSequence(): { positions: number[]; matches: boolean[] } {
 
 function NBackGame({
   onComplete,
+  settings,
 }: {
   onComplete: (score: number, metadata?: Record<string, unknown>) => void;
+  settings?: NBackSettings;
 }) {
-  const [sequenceData] = useState(() => generateSequence());
+  const n = settings?.n ?? DEFAULT_N;
+  const sequenceLength = settings?.sequenceLength ?? DEFAULT_SEQUENCE_LENGTH;
+  const displayTime = settings?.displayTime ?? DEFAULT_DISPLAY_TIME;
+
+  const [sequenceData] = useState(() => generateSequence(n, sequenceLength));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activeCell, setActiveCell] = useState<number | null>(null);
   const [responded, setResponded] = useState(false);
@@ -54,21 +61,21 @@ function NBackGame({
   const advanceSequence = useCallback(() => {
     setCurrentIndex((prev) => {
       const next = prev + 1;
-      if (next >= SEQUENCE_LENGTH) return prev; // will be handled by effect
+      if (next >= sequenceData.positions.length) return prev; // will be handled by effect
       return next;
     });
     setResponded(false);
     setFeedback(null);
-  }, []);
+  }, [sequenceData.positions.length]);
 
   useEffect(() => {
-    if (currentIndex >= SEQUENCE_LENGTH) {
+    if (currentIndex >= sequenceLength) {
       // Game over
       const totalMatches = sequenceData.matches.filter(Boolean).length;
       const accuracy = totalMatches > 0 ? Math.round((hits / Math.max(1, totalMatches)) * 100) : 100;
       const score = Math.max(0, hits * 10 - falseAlarms * 5);
       onComplete(score, {
-        n: N,
+        n,
         hits,
         misses,
         falseAlarms,
@@ -89,15 +96,15 @@ function NBackGame({
       }
       setActiveCell(null);
       setTimeout(advanceSequence, 300);
-    }, DISPLAY_TIME);
+    }, displayTime);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [currentIndex, sequenceData, responded, advanceSequence, hits, misses, falseAlarms, correctRejects, onComplete]);
+  }, [currentIndex, sequenceData, responded, advanceSequence, hits, misses, falseAlarms, correctRejects, onComplete, n, sequenceLength, displayTime]);
 
   const handleMatch = useCallback(() => {
-    if (responded || currentIndex < N) return;
+    if (responded || currentIndex < n) return;
     setResponded(true);
 
     if (sequenceData.matches[currentIndex]) {
@@ -117,8 +124,8 @@ function NBackGame({
     >
       <div className="flex gap-6 text-center">
         <div>
-          <p className="text-sm text-muted">{N}-Back</p>
-          <p className="font-mono font-bold">{currentIndex + 1}/{SEQUENCE_LENGTH}</p>
+          <p className="text-sm text-muted">{n}-Back</p>
+          <p className="font-mono font-bold">{currentIndex + 1}/{sequenceLength}</p>
         </div>
         <div>
           <p className="text-sm text-muted">Hits</p>
@@ -144,16 +151,16 @@ function NBackGame({
 
       <button
         onClick={handleMatch}
-        disabled={responded || currentIndex < N}
+        disabled={responded || currentIndex < n}
         className="rounded-lg bg-accent/20 text-accent px-12 py-4 text-lg font-semibold hover:bg-accent/30 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
       >
         Match!
       </button>
 
       <p className="text-sm text-muted">
-        {currentIndex < N
-          ? `Watch the first ${N} positions...`
-          : "Press Match if the position is the same as 2 steps ago"}
+        {currentIndex < n
+          ? `Watch the first ${n} positions...`
+          : `Press Match if the position is the same as ${n} steps ago`}
       </p>
 
       {feedback && (
@@ -173,11 +180,16 @@ export default function NBackPage() {
       instructions={
         <p>
           A tile will light up on a 3x3 grid in sequence. Press &quot;Match&quot; when the current
-          position is the same as the one from <strong>{N} steps ago</strong>.
+          position is the same as the one from <strong>N steps ago</strong>. The N value depends on difficulty.
         </p>
       }
     >
-      {({ onComplete }) => <NBackGame onComplete={onComplete} />}
+      {({ onComplete, settings }) => (
+        <NBackGame
+          onComplete={onComplete}
+          settings={settings as NBackSettings | undefined}
+        />
+      )}
     </TestShell>
   );
 }
