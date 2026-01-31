@@ -19,7 +19,7 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2.5 group">
           <Activity className="h-5 w-5 text-accent transition-transform group-hover:scale-110" />
-          <span className="text-xl tracking-tight font-[family-name:var(--font-display)]">Baseline</span>
+          <span className="text-lg font-medium tracking-tight font-[family-name:var(--font-display)]">baseline</span>
         </Link>
 
         <nav className="flex items-center gap-1">

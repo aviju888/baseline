@@ -39,8 +39,8 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12 text-center"
         >
-          <h1 className="text-5xl tracking-tight font-[family-name:var(--font-display)]">
-            Baseline
+          <h1 className="text-5xl font-medium tracking-tight font-[family-name:var(--font-display)]">
+            baseline
           </h1>
           <p className="mt-3 text-lg text-muted">
             Know your cognitive baseline.
