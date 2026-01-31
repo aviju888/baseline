@@ -12,8 +12,8 @@ interface TestCardProps {
   index: number;
 }
 
-// Icon colors by category — only icons stay colored
-const iconColors: Record<string, string> = {
+// Category colors for icons and titles
+const categoryColors: Record<string, string> = {
   classic: "text-accent",
   cognitive: "text-violet",
   perception: "text-success",
@@ -23,26 +23,26 @@ const iconColors: Record<string, string> = {
 
 export function TestCard({ test, bestScore, recentScores, index }: TestCardProps) {
   const Icon = test.icon;
-  const iconColor = iconColors[test.category] ?? "text-accent";
+  const categoryColor = categoryColors[test.category] ?? "text-accent";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03, duration: 0.3 }}
+      transition={{ delay: index * 0.04, duration: 0.4, ease: "easeOut" }}
     >
       <Link href={test.route} className="group block">
-        <div className="rounded-xl border border-border bg-surface p-5 transition-all duration-200 hover:border-border-light group-hover:translate-y-[-2px]">
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-5 transition-colors duration-150 hover:bg-white/[0.04]">
           <div className="flex items-start gap-4">
-            <Icon className={`h-7 w-7 shrink-0 mt-0.5 ${iconColor}`} />
+            <Icon className={`h-6 w-6 shrink-0 mt-0.5 ${categoryColor}`} />
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-foreground">{test.name}</h3>
+              <h3 className={`font-medium ${categoryColor}`}>{test.name}</h3>
               <p className="mt-1 text-sm text-muted line-clamp-2">{test.description}</p>
             </div>
           </div>
 
           {bestScore && (
-            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+            <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between">
               <p className="text-xs text-muted">
                 Best: <span className="font-mono font-medium text-foreground">{bestScore}</span>
               </p>

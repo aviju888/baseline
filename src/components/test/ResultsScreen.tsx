@@ -5,10 +5,21 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Sparkline } from "@/components/ui/Sparkline";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { formatScore } from "@/lib/scoring/statistics";
 import { shareResult } from "@/lib/share";
 import { RotateCcw, Home, Trash2, Share2 } from "lucide-react";
 import Link from "next/link";
+
+function getScoreFormatter(unit: string): (n: number) => string {
+  if (unit === "ms") return (n) => `${Math.round(n)} ms`;
+  if (unit === "%") return (n) => `${Math.round(n)}%`;
+  if (unit === "BPM") return (n) => `${n.toFixed(1)} BPM`;
+  if (unit === "px") return (n) => `${Math.round(n)} px`;
+  if (unit === "level") return (n) => `Level ${Math.round(n)}`;
+  if (unit === "pts") return (n) => `${Math.round(n)} pts`;
+  return (n) => `${Math.round(n)} ${unit}`;
+}
 
 interface ResultsScreenProps {
   score: number;
@@ -67,9 +78,13 @@ export function ResultsScreen({
     >
       <div className="space-y-2">
         <p className="text-sm text-muted uppercase tracking-wider">{scoreLabel}</p>
-        <p className="text-6xl font-bold font-mono text-accent">
-          {formatScore(score, scoreUnit)}
-        </p>
+        <div className="text-6xl font-bold font-mono text-accent">
+          <AnimatedNumber
+            value={score}
+            duration={800}
+            formatFn={getScoreFormatter(scoreUnit)}
+          />
+        </div>
       </div>
 
       <div className="flex gap-8 text-sm">
