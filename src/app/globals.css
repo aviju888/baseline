@@ -1,39 +1,36 @@
 @import "tailwindcss";
 
-/* TODO: Light mode
-   - Add a light theme variant (toggle in header)
-   - Use CSS variables + class-based theme switching
-   - Add prefers-color-scheme media query for auto-detection
-*/
-
-/* TODO: Custom fonts
-   - Consider JetBrains Mono for score displays (more character)
-   - Add font-display: swap for better loading performance
-*/
-
 @theme inline {
-  --color-background: #0a0a0f;
-  --color-foreground: #f0f0f5;
-  --color-surface: #1a1a2e;
-  --color-surface-light: #22223a;
-  --color-border: #2a2a3e;
-  --color-border-light: #3a3a50;
-  --color-muted: #8888a0;
-  --color-accent: #4f8fff;
-  --color-accent-hover: #6ba0ff;
-  --color-accent-glow: rgba(79, 143, 255, 0.15);
+  --color-background: #09090b;
+  --color-foreground: #fafafa;
+  --color-surface: #18181b;
+  --color-surface-light: #27272a;
+  --color-border: #27272a;
+  --color-border-light: #3f3f46;
+  --color-muted: #a1a1aa;
+  --color-accent: #3b82f6;
+  --color-accent-hover: #60a5fa;
+  --color-accent-glow: rgba(59, 130, 246, 0.15);
   --color-success: #22c55e;
   --color-error: #ef4444;
   --color-warning: #f59e0b;
-  --color-violet: #7c5cff;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-violet: #8b5cf6;
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular figures for numbers */
+.font-mono, .tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Scrollbar styling */
