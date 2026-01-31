@@ -2,12 +2,12 @@
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
-import type { LucideIcon } from "lucide-react";
+import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 
 interface InstructionsScreenProps {
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   instructions?: React.ReactNode;
   onStart: () => void;
 }
@@ -26,7 +26,7 @@ export function InstructionsScreen({
       className="flex flex-col items-center justify-center gap-8 text-center px-4"
     >
       <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-accent/10">
-        <Icon className="h-10 w-10 text-accent" />
+        <Icon className="h-10 w-10 text-accent" weight="light" />
       </div>
 
       <div className="space-y-3">
