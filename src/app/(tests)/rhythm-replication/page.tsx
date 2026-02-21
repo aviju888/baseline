@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { TestShell } from "@/components/test/TestShell";
 import { testMap } from "@/lib/tests/registry";
 import { mean } from "@/lib/scoring/statistics";
@@ -106,6 +106,13 @@ function RhythmReplicationGame({
     }, totalDuration);
   }, [getAudioCtx, beatCount]);
 
+  // Auto-play pattern when round advances (round > 0)
+  useEffect(() => {
+    if (round > 0) {
+      playPattern();
+    }
+  }, [round, playPattern]);
+
   const handleTap = useCallback(() => {
     if (phase !== "tap") return;
 
@@ -133,7 +140,6 @@ function RhythmReplicationGame({
           return;
         }
         setRound(nextRound);
-        playPattern();
       }, 1500);
     }
   }, [phase, taps, pattern, scores, round, onComplete, getAudioCtx, playPattern]);

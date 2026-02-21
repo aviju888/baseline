@@ -34,6 +34,7 @@ function PitchComparisonGame({
   const [playing, setPlaying] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [lives, setLives] = useState(3);
+  const [started, setStarted] = useState(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const correctAnswerRef = useRef<"higher" | "lower">("higher");
 
@@ -49,6 +50,7 @@ function PitchComparisonGame({
 
   const playRound = useCallback(() => {
     const ctx = getAudioCtx();
+    setStarted(true);
     setPlaying(true);
     setFeedback(null);
 
@@ -85,12 +87,13 @@ function PitchComparisonGame({
 
       setTimeout(() => {
         const nextRound = round + 1;
+        const finalLevel = isCorrect ? level + 1 : level;
         if (!isCorrect && newLives <= 0) {
-          onComplete(level, { correct: score + (isCorrect ? 1 : 0), total: nextRound });
+          onComplete(finalLevel, { correct: score + (isCorrect ? 1 : 0), total: nextRound });
           return;
         }
         if (nextRound >= TOTAL_ROUNDS) {
-          onComplete(level, { correct: score + (isCorrect ? 1 : 0), total: TOTAL_ROUNDS });
+          onComplete(finalLevel, { correct: score + (isCorrect ? 1 : 0), total: TOTAL_ROUNDS });
           return;
         }
         setRound(nextRound);
@@ -118,7 +121,7 @@ function PitchComparisonGame({
         </div>
       </div>
 
-      {!playing && round === 0 && !feedback && (
+      {!playing && !started && (
         <button
           onClick={playRound}
           className="rounded-lg bg-accent px-8 py-4 text-lg font-semibold text-white hover:bg-accent-hover transition-colors cursor-pointer"
@@ -136,7 +139,7 @@ function PitchComparisonGame({
         </div>
       )}
 
-      {!playing && (round > 0 || feedback) && (
+      {!playing && started && (
         <div className="text-center space-y-4">
           <p className="text-lg text-muted">Was the second tone higher or lower?</p>
           <div className="flex gap-4">
