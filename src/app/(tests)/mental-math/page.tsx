@@ -64,6 +64,7 @@ function MentalMathGame({
   const [streak, setStreak] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const startTimeRef = useRef(Date.now());
+  const completedRef = useRef(false);
 
   useEffect(() => {
     startTimeRef.current = Date.now();
@@ -83,7 +84,8 @@ function MentalMathGame({
   }, [duration]);
 
   useEffect(() => {
-    if (timeLeft <= 0) {
+    if (timeLeft <= 0 && !completedRef.current) {
+      completedRef.current = true;
       onComplete(score, { streak });
     }
   }, [timeLeft, score, streak, onComplete]);
