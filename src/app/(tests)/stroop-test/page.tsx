@@ -66,6 +66,7 @@ function StroopGame({
 
   const handleAnswer = useCallback(
     (colorName: string) => {
+      if (feedback) return;
       const rt = performance.now() - trialStartRef.current;
       const isCorrect = colorName === trial.inkColor.name;
 
@@ -93,7 +94,7 @@ function StroopGame({
         setTrial(generateTrial(incongruentProbability));
       }, 300);
     },
-    [trial, round, times, correct, onComplete, totalRounds, incongruentProbability]
+    [feedback, trial, round, times, correct, onComplete, totalRounds, incongruentProbability]
   );
 
   return (

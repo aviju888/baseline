@@ -96,6 +96,7 @@ function PatternRecognitionGame({
 
   const handleAnswer = useCallback(
     (choice: number) => {
+      if (feedback) return;
       const isCorrect = choice === pattern.answer;
       if (isCorrect) setScore((s) => s + 1);
 
@@ -112,7 +113,7 @@ function PatternRecognitionGame({
         setPattern(generatePattern(Math.floor(nextRound / 2)));
       }, 500);
     },
-    [pattern, round, score, onComplete]
+    [feedback, pattern, round, score, onComplete]
   );
 
   return (
