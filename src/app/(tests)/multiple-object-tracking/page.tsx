@@ -164,7 +164,6 @@ function MOTGame({
             setTimeout(() => {
               if (correctSelections === targetCount) {
                 setLevel((l) => l + 1);
-                initRound();
               } else {
                 const newLives = lives - 1;
                 setLives(newLives);
